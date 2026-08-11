@@ -12,13 +12,11 @@ This server gives any MCP-capable agent the current answer instead. Documentatio
 
 ## Quick start
 
-One-time index build (about a minute; prebuilt downloads are on the roadmap):
+Register the server with your client; on first use it downloads a prebuilt index (a couple of megabytes) automatically. Building locally is only needed for versions without a prebuilt asset:
 
 ```bash
-uvx cudaq-docs-mcp build
+uvx cudaq-docs-mcp build --version 0.14.0
 ```
-
-Then register the server with your client.
 
 **Claude Code**
 
@@ -101,7 +99,7 @@ Set `CUDAQ_DOCS_MCP_AUTOBUILD=1` to build automatically on first use, and `CUDAQ
 
 ## Roadmap
 
-- Prebuilt indexes as release assets, so first run is a download instead of a build
+- Prebuilt indexes for pinned release versions, not just `latest`
 - An eval set of real developer questions, with published retrieval scores
 - CUDA-QX library docs
 
