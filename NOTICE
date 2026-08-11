@@ -1,0 +1,12 @@
+cudaq-docs-mcp
+Copyright 2026 Roger Wong
+
+This is a community project. It is not affiliated with, sponsored by, or
+endorsed by NVIDIA Corporation. CUDA-Q is a trademark of NVIDIA Corporation.
+
+This software serves documentation content published by the NVIDIA CUDA-Q
+project (https://github.com/NVIDIA/cuda-quantum), which is licensed under
+the Apache License, Version 2.0, and is
+Copyright (c) NVIDIA Corporation & Affiliates.
+Served results link back to the canonical documentation pages at
+https://nvidia.github.io/cuda-quantum/.

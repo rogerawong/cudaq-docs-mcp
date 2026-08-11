@@ -1,0 +1,33 @@
+name: Refresh docs index
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Build indexes
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cudaq-docs-mcp build --version latest --out dist-index
+          gzip -f dist-index/*.sqlite3
+      - name: Publish to rolling release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view index-v1 >/dev/null 2>&1 || \
+            gh release create index-v1 --title "Prebuilt docs indexes" \
+              --notes "Rolling release: nightly-refreshed prebuilt indexes downloaded by the server on first run."
+          gh release upload index-v1 dist-index/*.sqlite3.gz --clobber

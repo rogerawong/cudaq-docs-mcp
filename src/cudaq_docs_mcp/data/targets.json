@@ -1,0 +1,271 @@
+{
+  "curated_from": "https://nvidia.github.io/cuda-quantum/latest/using/backends/backends.html",
+  "docs_reviewed": "latest (CUDA-Q 0.15.0), August 2026",
+  "how_to_choose": "No GPU: start with qpp-cpu for small circuits. With a GPU: nvidia is the default state vector simulator; add option='mgpu' to scale across GPUs and nodes. Shallow circuits with many qubits: tensornet. Low-entanglement approximation: tensornet-mps. Noise modeling: trajectory noise on nvidia or tensornet, density-matrix-cpu for exact small systems, stim for Clifford/QEC circuits. Time evolution and pulse-level physics: dynamics. Real hardware: pick the provider target and set credentials; braket, scaleway, and qbraid reach multiple providers through one cloud account.",
+  "targets": [
+    {
+      "name": "qpp-cpu",
+      "category": "simulator",
+      "kind": "state vector (CPU)",
+      "summary": "OpenMP-parallelized CPU state vector simulator based on the Q++ library. The default target on machines without an NVIDIA GPU.",
+      "gpu": "none",
+      "select_python": "cudaq.set_target(\"qpp-cpu\")",
+      "select_cli": "nvq++ --target qpp-cpu program.cpp",
+      "when_to_use": "Development and small tests without a GPU; practical up to roughly 25 qubits.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/svsims.html#cpu"
+    },
+    {
+      "name": "nvidia",
+      "category": "simulator",
+      "kind": "state vector (GPU, cuStateVec)",
+      "summary": "GPU-accelerated state vector simulator on NVIDIA cuQuantum cuStateVec. The default target when a GPU is available. Options extend it: fp64 for double precision, mgpu for multi-GPU multi-node scaling, mqpu to simulate multiple virtual QPUs in parallel for asynchronous workloads.",
+      "gpu": "required",
+      "select_python": "cudaq.set_target(\"nvidia\")  # options: cudaq.set_target(\"nvidia\", option=\"mgpu,fp64\")",
+      "select_cli": "nvq++ --target nvidia program.cpp",
+      "when_to_use": "The general-purpose choice for exact simulation on GPUs; scale beyond one GPU's memory with option='mgpu', and parallelize independent circuits with option='mqpu'.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/svsims.html#single-gpu"
+    },
+    {
+      "name": "tensornet",
+      "category": "simulator",
+      "kind": "tensor network (GPU, cuTensorNet)",
+      "summary": "Exact tensor network contraction simulator on cuQuantum cuTensorNet, scaling to multiple GPUs and nodes.",
+      "gpu": "required",
+      "select_python": "cudaq.set_target(\"tensornet\")",
+      "select_cli": "nvq++ --target tensornet program.cpp",
+      "when_to_use": "Shallow-depth circuits with large qubit counts where state vector memory is prohibitive.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/tnsims.html#multi-gpu-multi-node"
+    },
+    {
+      "name": "tensornet-mps",
+      "category": "simulator",
+      "kind": "matrix product state (GPU)",
+      "summary": "Approximate matrix product state simulator built on cuTensorNet, with configurable bond dimension.",
+      "gpu": "required",
+      "select_python": "cudaq.set_target(\"tensornet-mps\")",
+      "select_cli": "nvq++ --target tensornet-mps program.cpp",
+      "when_to_use": "Larger circuits with limited entanglement where an approximate result is acceptable.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/tnsims.html#matrix-product-state"
+    },
+    {
+      "name": "fermioniq",
+      "category": "simulator",
+      "kind": "tensor network emulator (third-party cloud)",
+      "summary": "Fermioniq's Ava tensor network emulator, accessed as a cloud service with Fermioniq credentials.",
+      "gpu": "cloud service",
+      "select_python": "cudaq.set_target(\"fermioniq\")",
+      "select_cli": "nvq++ --target fermioniq program.cpp",
+      "when_to_use": "Tensor network emulation as a managed cloud service rather than on local GPUs.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/tnsims.html#fermioniq"
+    },
+    {
+      "name": "density-matrix-cpu",
+      "category": "simulator",
+      "kind": "density matrix (CPU)",
+      "summary": "CPU density matrix simulator for exact noisy simulation with cudaq noise models.",
+      "gpu": "none",
+      "select_python": "cudaq.set_target(\"density-matrix-cpu\")",
+      "select_cli": "nvq++ --target density-matrix-cpu program.cpp",
+      "when_to_use": "Exact noise modeling on small systems; density matrices square the memory cost, so qubit counts stay low.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/noisy.html#density-matrix"
+    },
+    {
+      "name": "stim",
+      "category": "simulator",
+      "kind": "stabilizer (CPU)",
+      "summary": "Clifford/stabilizer circuit simulator built on the Stim library.",
+      "gpu": "none",
+      "select_python": "cudaq.set_target(\"stim\")",
+      "select_cli": "nvq++ --target stim program.cpp",
+      "when_to_use": "Clifford-only circuits at very large qubit counts, especially quantum error correction studies.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/noisy.html#stim"
+    },
+    {
+      "name": "orca-photonics",
+      "category": "simulator",
+      "kind": "photonics simulator (CPU)",
+      "summary": "Simulator for ORCA-style photonic boson sampling computations.",
+      "gpu": "none",
+      "select_python": "cudaq.set_target(\"orca-photonics\")",
+      "select_cli": "nvq++ --target orca-photonics program.cpp",
+      "when_to_use": "Developing photonic time-bin interferometer programs before running on ORCA hardware.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/sims/photonics.html#orca-photonics"
+    },
+    {
+      "name": "dynamics",
+      "category": "simulator",
+      "kind": "time evolution (GPU, cuQuantum Dynamics)",
+      "summary": "GPU-accelerated simulation of quantum dynamics: time evolution of qubits and qudits under Hamiltonians, including open systems.",
+      "gpu": "required",
+      "select_python": "cudaq.set_target(\"dynamics\")",
+      "select_cli": "nvq++ --target dynamics program.cpp",
+      "when_to_use": "Pulse-level and Hamiltonian-level physics with cudaq.evolve rather than gate-level circuit sampling.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/dynamics_backends.html"
+    },
+    {
+      "name": "ionq",
+      "category": "hardware",
+      "kind": "trapped ion QPU",
+      "summary": "IonQ trapped-ion quantum computers through the IonQ cloud, with an emulation option for pre-flight checks.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"ionq\")",
+      "select_cli": "nvq++ --target ionq program.cpp",
+      "when_to_use": "Running on IonQ hardware; requires an IonQ API key.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/iontrap.html#ionq"
+    },
+    {
+      "name": "quantinuum",
+      "category": "hardware",
+      "kind": "trapped ion QPU",
+      "summary": "Quantinuum H-series trapped-ion systems, including syntax checkers and emulators before hardware submission.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"quantinuum\")",
+      "select_cli": "nvq++ --target quantinuum program.cpp",
+      "when_to_use": "Running on Quantinuum hardware; requires Quantinuum credentials.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/iontrap.html#quantinuum"
+    },
+    {
+      "name": "anyon",
+      "category": "hardware",
+      "kind": "superconducting QPU",
+      "summary": "Anyon Technologies/Anyon Computing superconducting systems.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"anyon\")",
+      "select_cli": "nvq++ --target anyon program.cpp",
+      "when_to_use": "Running on Anyon hardware; requires provider credentials.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/superconducting.html#anyon-technologies-anyon-computing"
+    },
+    {
+      "name": "iqm",
+      "category": "hardware",
+      "kind": "superconducting QPU",
+      "summary": "IQM superconducting quantum computers.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"iqm\")",
+      "select_cli": "nvq++ --target iqm program.cpp",
+      "when_to_use": "Running on IQM hardware; requires IQM credentials.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/superconducting.html#iqm"
+    },
+    {
+      "name": "oqc",
+      "category": "hardware",
+      "kind": "superconducting QPU",
+      "summary": "Oxford Quantum Circuits superconducting systems.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"oqc\")",
+      "select_cli": "nvq++ --target oqc program.cpp",
+      "when_to_use": "Running on OQC hardware; requires OQC credentials.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/superconducting.html#oqc"
+    },
+    {
+      "name": "qci",
+      "category": "hardware",
+      "kind": "superconducting QPU",
+      "summary": "Quantum Circuits, Inc. superconducting systems (Seeker).",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"qci\")",
+      "select_cli": "nvq++ --target qci program.cpp",
+      "when_to_use": "Running on Quantum Circuits hardware; requires QCI credentials.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/superconducting.html#quantum-circuits-inc"
+    },
+    {
+      "name": "tii",
+      "category": "hardware",
+      "kind": "superconducting QPU",
+      "summary": "Technology Innovation Institute superconducting systems.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"tii\")",
+      "select_cli": "nvq++ --target tii program.cpp",
+      "when_to_use": "Running on TII hardware; requires provider credentials.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/superconducting.html#tii"
+    },
+    {
+      "name": "infleqtion",
+      "category": "hardware",
+      "kind": "neutral atom QPU",
+      "summary": "Infleqtion neutral-atom quantum computers through Superstaq.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"infleqtion\")",
+      "select_cli": "nvq++ --target infleqtion program.cpp",
+      "when_to_use": "Running on Infleqtion hardware; requires Superstaq credentials.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/neutralatom.html#infleqtion"
+    },
+    {
+      "name": "pasqal",
+      "category": "hardware",
+      "kind": "neutral atom QPU (analog)",
+      "summary": "Pasqal neutral-atom systems for analog quantum computing.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"pasqal\")",
+      "select_cli": "nvq++ --target pasqal program.cpp",
+      "when_to_use": "Analog neutral-atom programs on Pasqal hardware; requires Pasqal credentials.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/neutralatom.html#pasqal"
+    },
+    {
+      "name": "quera",
+      "category": "hardware",
+      "kind": "neutral atom QPU (analog)",
+      "summary": "QuEra Computing neutral-atom systems.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"quera\")",
+      "select_cli": "nvq++ --target quera program.cpp",
+      "when_to_use": "Analog neutral-atom programs on QuEra hardware.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/neutralatom.html#quera-computing"
+    },
+    {
+      "name": "orca",
+      "category": "hardware",
+      "kind": "photonic QPU",
+      "summary": "ORCA Computing PT Series photonic systems for time-bin boson sampling.",
+      "gpu": "n/a (provider cloud)",
+      "select_python": "cudaq.set_target(\"orca\")",
+      "select_cli": "nvq++ --target orca program.cpp",
+      "when_to_use": "Running photonic programs on ORCA hardware.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/photonic.html#orca-computing"
+    },
+    {
+      "name": "quantum_machines",
+      "category": "hardware",
+      "kind": "quantum control system",
+      "summary": "Executes CUDA-Q programs on hardware driven by Quantum Machines OPX control systems.",
+      "gpu": "n/a (provider system)",
+      "select_python": "cudaq.set_target(\"quantum_machines\")",
+      "select_cli": "nvq++ --target quantum_machines program.cpp",
+      "when_to_use": "Labs running QPUs on Quantum Machines controllers.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/hardware/qcontrol.html#quantum-machines"
+    },
+    {
+      "name": "braket",
+      "category": "cloud",
+      "kind": "multi-provider cloud",
+      "summary": "Amazon Braket: reaches multiple hardware providers and managed simulators through an AWS account.",
+      "gpu": "n/a (cloud)",
+      "select_python": "cudaq.set_target(\"braket\")",
+      "select_cli": "nvq++ --target braket program.cpp",
+      "when_to_use": "One AWS account for several hardware providers and Braket's managed simulators.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/cloud/braket.html"
+    },
+    {
+      "name": "scaleway",
+      "category": "cloud",
+      "kind": "multi-provider cloud",
+      "summary": "Scaleway Quantum as a Service: GPU-accelerated simulation sessions and quantum hardware through Scaleway's cloud.",
+      "gpu": "n/a (cloud)",
+      "select_python": "cudaq.set_target(\"scaleway\")",
+      "select_cli": "nvq++ --target scaleway program.cpp",
+      "when_to_use": "Renting large GPU simulation capacity or reaching hardware through a Scaleway account.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/cloud/scaleway.html"
+    },
+    {
+      "name": "qbraid",
+      "category": "cloud",
+      "kind": "multi-provider cloud",
+      "summary": "qBraid cloud platform access to quantum hardware and simulators.",
+      "gpu": "n/a (cloud)",
+      "select_python": "cudaq.set_target(\"qbraid\")",
+      "select_cli": "nvq++ --target qbraid program.cpp",
+      "when_to_use": "Reaching multiple devices through a qBraid account.",
+      "docs_url": "https://nvidia.github.io/cuda-quantum/latest/using/backends/cloud/qbraid.html"
+    }
+  ]
+}
