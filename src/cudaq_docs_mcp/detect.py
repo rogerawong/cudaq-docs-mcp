@@ -9,7 +9,13 @@ from __future__ import annotations
 
 from importlib import metadata
 
-_DIST_CANDIDATES = ("cudaq", "cuda-quantum", "cuda-quantum-cu12", "cuda-quantum-cu11")
+_DIST_CANDIDATES = (
+    "cudaq",
+    "cuda-quantum",
+    "cuda-quantum-cu13",
+    "cuda-quantum-cu12",
+    "cuda-quantum-cu11",
+)
 
 
 def installed_cudaq_version() -> str | None:
