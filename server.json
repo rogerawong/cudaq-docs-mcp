@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.rogerawong/cudaq-docs-mcp",
+  "title": "CUDA-Q Docs",
+  "description": "NVIDIA CUDA-Q documentation, API reference, and runnable examples for AI agents, version-pinned to the installed cudaq package.",
+  "version": "0.1.1",
+  "repository": {
+    "url": "https://github.com/rogerawong/cudaq-docs-mcp",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "cudaq-docs-mcp",
+      "version": "0.1.1",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

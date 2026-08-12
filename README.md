@@ -110,3 +110,5 @@ Issues and PRs are welcome. Commits need a DCO sign-off (`git commit -s`); see [
 ## License
 
 [Apache-2.0](LICENSE). Documentation content belongs to NVIDIA Corporation & Affiliates, originates from the Apache-2.0 licensed [NVIDIA/cuda-quantum](https://github.com/NVIDIA/cuda-quantum) repository, and every served result links back to the canonical page. See [NOTICE](NOTICE).
+
+<!-- mcp-name: io.github.rogerawong/cudaq-docs-mcp -->

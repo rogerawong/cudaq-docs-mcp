@@ -4,4 +4,4 @@ Serves CUDA-Q docs, API reference, and runnable examples to AI agents,
 version-pinned to the user's installed cudaq package.
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
