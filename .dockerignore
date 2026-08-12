@@ -1,0 +1,8 @@
+.venv/
+.git/
+dist/
+dist-index/
+__pycache__/
+*.sqlite3
+*.sqlite3.gz
+.pytest_cache/
