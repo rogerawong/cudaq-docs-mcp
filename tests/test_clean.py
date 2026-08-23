@@ -135,3 +135,55 @@ def test_indented_code_outside_fences_survives():
     # Real relative links and images are still absolutized.
     assert "(https://nvidia.github.io/cuda-quantum/latest/using/basics/basics.html)" in doc.text
     assert "![](https://nvidia.github.io/cuda-quantum/latest/_images/bell.png)" in doc.text
+
+
+NESTED_HL_SAMPLE = """\
+::: {itemprop="articleBody"}
+# API[¶](#api "Permalink to this heading"){.headerlink}
+
+cudaq::draw
+
+:   Draws a kernel.
+
+    Usage:
+
+    ::: {.highlight-cpp .notranslate}
+    ::: highlight
+        #include <cudaq.h>
+
+        auto bell = []() __qpu__ {
+          h(q[0]);
+        };
+    :::
+    :::
+
+    Returns a std::vector\\<double\\> of amplitudes for a std::complex\\<double\\>
+    state. For \\(i \\< d\\) the norm is \\(\\|\\mathbf{x}\\|_2\\).
+::: {.rst-footer-buttons role="navigation"}
+:::
+"""
+
+
+def test_nested_highlight_block_is_fenced():
+    """Issue #3: highlight divs nested in a definition list must fence."""
+    doc = clean_page(NESTED_HL_SAMPLE, page_url=URL)
+    code = doc.text.split("```")[1]
+    assert "#include <cudaq.h>" in code
+    assert "auto bell = []() __qpu__ {" in code
+    # dedented to column zero, not left at the definition-list indent
+    assert "\n#include <cudaq.h>" in "\n" + code.lstrip("cpp\n")
+
+
+def test_signature_escapes_unescaped_in_prose():
+    """Issue #3: pandoc-escaped C++ template brackets read as real C++."""
+    doc = clean_page(NESTED_HL_SAMPLE, page_url=URL)
+    assert "std::vector<double>" in doc.text
+    assert "std::complex<double>" in doc.text
+    assert "std::vector\\<" not in doc.text
+
+
+def test_latex_math_is_preserved():
+    """Issue #3: math delimiters and norm bars are LaTeX, not escapes."""
+    doc = clean_page(NESTED_HL_SAMPLE, page_url=URL)
+    assert "\\(i \\< d\\)" in doc.text
+    assert "\\(\\|\\mathbf{x}\\|_2\\)" in doc.text
