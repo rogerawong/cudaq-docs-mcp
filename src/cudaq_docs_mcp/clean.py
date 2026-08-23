@@ -40,7 +40,8 @@ _LANG_MAP = {
 }
 
 # Pandoc attribute blocks: {.class}, {#id}, {key="value" ...}. May wrap lines.
-_ATTR_RE = re.compile(r"\{(?:[.#][^{}]*|[\w-]+=[^{}]*|)\}", re.S)
+# Values are always quoted, which keeps C++ like ``{}`` or ``{i=0;}`` intact.
+_ATTR_RE = re.compile(r"\{(?:[.#][^{}]*|[\w-]+=\"[^{}]*)\}", re.S)
 # [text] not followed by ( is a pandoc span left over after attr removal.
 _SPAN_RE = re.compile(r"\[([^\[\]\n]*)\](?!\()")
 # Relative links become absolute against the canonical page URL.
@@ -130,8 +131,11 @@ def _clean_inline(s: str) -> str:
     return re.sub(r"\s{2,}", " ", s).strip()
 
 
-def _clean_prose(text: str) -> str:
-    """Strip pandoc syntax outside fenced code blocks."""
+_INLINE_CODE_RE = re.compile(r"(`[^`\n]+`)")
+
+
+def _map_prose(text: str, transform) -> str:
+    """Apply transform to prose only: never inside fenced or inline code."""
     parts = re.split(r"(^```.*?$)", text, flags=re.M)
     # re.split with a capturing group keeps the fence lines; track state.
     out: list[str] = []
@@ -144,11 +148,38 @@ def _clean_prose(text: str) -> str:
         if in_fence:
             out.append(part)
             continue
-        part = _ATTR_RE.sub("", part)
+        pieces = _INLINE_CODE_RE.split(part)
+        out.append("".join(c if c.startswith("`") else transform(c) for c in pieces))
+    return "".join(out)
+
+
+def _absolutize(m: re.Match, page_url: str) -> str:
+    """Absolutize a relative doc link; leave code that merely looks like one.
+
+    A relative doc link always contains a path separator or an extension
+    (``../index.html``, ``basics/basics.html``). A C++ lambda's parameter
+    list, ``[](float theta)`` or ``[&](int x)``, never does. Code outside
+    fenced blocks (Doxygen examples in definition lists, for instance)
+    reaches this path, so the target's shape is the final guard.
+    """
+    target = m.group(2)
+    if "/" not in target and "." not in target:
+        return m.group(0)
+    return m.group(1) + urljoin(page_url, target)
+
+
+def _clean_prose(text: str, page_url: str | None = None) -> str:
+    """Strip pandoc syntax and absolutize relative links, in prose only."""
+
+    def transform(prose: str) -> str:
+        prose = _ATTR_RE.sub("", prose)
         for _ in range(3):
-            part = _SPAN_RE.sub(r"\1", part)
-        out.append(part)
-    cleaned = "".join(out)
+            prose = _SPAN_RE.sub(r"\1", prose)
+        if page_url:
+            prose = _REL_LINK_RE.sub(lambda m: _absolutize(m, page_url), prose)
+        return prose
+
+    cleaned = _map_prose(text, transform)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
     return cleaned.strip() + "\n"
 
@@ -170,9 +201,7 @@ def clean_page(md_text: str, page_url: str | None = None) -> CleanDoc:
         else:
             staged.append(line)
 
-    text = _clean_prose("\n".join(staged))
-    if page_url:
-        text = _REL_LINK_RE.sub(lambda m: m.group(1) + urljoin(page_url, m.group(2)), text)
+    text = _clean_prose("\n".join(staged), page_url)
 
     # Re-locate headings in the final text (prose cleanup preserves heading lines).
     headings: list[Heading] = []

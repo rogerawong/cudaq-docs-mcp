@@ -13,7 +13,7 @@ import sqlite3
 import sys
 from pathlib import Path
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 BASE_URL = "https://nvidia.github.io/cuda-quantum"
 
 _DDL = """
