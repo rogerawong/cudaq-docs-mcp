@@ -187,3 +187,23 @@ def test_latex_math_is_preserved():
     doc = clean_page(NESTED_HL_SAMPLE, page_url=URL)
     assert "\\(i \\< d\\)" in doc.text
     assert "\\(\\|\\mathbf{x}\\|_2\\)" in doc.text
+
+
+DISPLAY_MATH_SAMPLE = """\
+::: {itemprop="articleBody"}
+# Dynamics[¶](#dynamics "Permalink to this heading"){.headerlink}
+
+The Hamiltonian \\(\\sigma_z\\) evolves per \\[H = \\frac{\\omega_z}{2}
+\\sigma_z + \\omega_x \\cos(\\omega_d t)\\]. Returns a std::vector\\<double\\>.
+::: {.rst-footer-buttons role="navigation"}
+:::
+"""
+
+
+def test_display_and_inline_math_survive_with_signatures():
+    """Issue #3: real \\(..\\) and \\[..\\] math is preserved, signatures unescaped."""
+    doc = clean_page(DISPLAY_MATH_SAMPLE, page_url=URL)
+    assert "\\(\\sigma_z\\)" in doc.text
+    assert "\\frac{\\omega_z}{2}" in doc.text
+    assert "\\sigma_z + \\omega_x \\cos(\\omega_d t)\\]" in doc.text
+    assert "std::vector<double>" in doc.text  # signature still fixed
