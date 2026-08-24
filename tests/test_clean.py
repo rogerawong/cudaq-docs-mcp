@@ -207,3 +207,28 @@ def test_display_and_inline_math_survive_with_signatures():
     assert "\\frac{\\omega_z}{2}" in doc.text
     assert "\\sigma_z + \\omega_x \\cos(\\omega_d t)\\]" in doc.text
     assert "std::vector<double>" in doc.text  # signature still fixed
+
+
+ESCAPED_BRACKET_SAMPLE = """\
+::: {itemprop="articleBody"}
+# Types[¶](#types "Permalink"){.headerlink}
+
+**\\[1\\]** The qudit models a system. **\\[2\\]** It has an index.
+
+A leftover span [QuakeValue]{.xref} is still stripped, a type \\[float\\]
+and an attribute \\[\\[nodiscard\\]\\] survive.
+::: {.rst-footer-buttons role="navigation"}
+:::
+"""
+
+
+def test_escaped_brackets_not_mangled_as_spans():
+    """Issue #5: backslash-escaped brackets are literals, not spans."""
+    doc = clean_page(ESCAPED_BRACKET_SAMPLE, page_url=URL)
+    assert "**[1]**" in doc.text and "**[2]**" in doc.text
+    assert "[float]" in doc.text
+    assert "[[nodiscard]]" in doc.text
+    assert "\\1" not in doc.text and "\\2" not in doc.text
+    # genuine leftover pandoc spans are still stripped
+    assert "QuakeValue" in doc.text
+    assert "[QuakeValue]" not in doc.text
