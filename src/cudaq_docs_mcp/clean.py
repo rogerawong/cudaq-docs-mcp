@@ -20,7 +20,9 @@ from urllib.parse import urljoin
 _ARTICLE_START = 'itemprop="articleBody"'
 _FOOTER_MARKS = ("rst-footer-buttons", '{role="contentinfo"}')
 
-_DIV_RE = re.compile(r"^(:{3,})\s*(.*?)\s*$")
+# Div markers may be indented when nested in a definition list (the
+# Doxygen-generated C++ API page does this), so leading space is captured.
+_DIV_RE = re.compile(r"^(\s*)(:{3,})\s*(.*?)\s*$")
 _HEADING_RE = re.compile(
     r'^(#{1,6})\s+(.*?)\s*\[¶\]\(#([^)"\s]+)[^)]*\)\s*(?:\{[^}]*\})?\s*$'
 )
@@ -46,6 +48,24 @@ _ATTR_RE = re.compile(r"\{(?:[.#][^{}]*|[\w-]+=\"[^{}]*)\}", re.S)
 _SPAN_RE = re.compile(r"\[([^\[\]\n]*)\](?!\()")
 # Relative links become absolute against the canonical page URL.
 _REL_LINK_RE = re.compile(r"(\]\()(?!https?://|#|mailto:)([^)\s]+)")
+# Pandoc escapes markdown punctuation in prose; C++ signatures live in
+# prose, so std::vector\\<double\\> is stored escaped. Reversed last, after
+# the passes above rely on the escapes still being present.
+_UNESCAPE_RE = re.compile(r"\\([\\`*_{}\[\]()>#+.!|~<-])")
+# Math spans are left alone: their delimiters and \| norm bars are real
+# LaTeX, not markdown escapes, so they must survive unescaping.
+_MATH_SPAN_RE = re.compile(r"\\\((?:.|\n)*?\\\)|\\\[(?:.|\n)*?\\\]")
+
+
+def _unescape_prose(prose: str) -> str:
+    out: list[str] = []
+    last = 0
+    for m in _MATH_SPAN_RE.finditer(prose):
+        out.append(_UNESCAPE_RE.sub(r"\1", prose[last : m.start()]))
+        out.append(m.group(0))  # LaTeX span kept verbatim
+        last = m.end()
+    out.append(_UNESCAPE_RE.sub(r"\1", prose[last:]))
+    return "".join(out)
 
 
 @dataclass
@@ -85,15 +105,21 @@ def _slice_article(lines: list[str]) -> list[str]:
 
 
 def _rebuild_blocks(lines: list[str]) -> list[str]:
-    """Drop div fences; convert indented highlight blocks to fenced code."""
+    """Drop div fences; convert highlight blocks to fenced code.
+
+    Pandoc indents a highlight block's code four spaces past its ``:::
+    highlight`` marker, so nested blocks (indented markers) are dedented by
+    the marker indent plus four.
+    """
     out: list[str] = []
     pending_lang = ""
     in_code = False
+    code_indent = 0
     code: list[str] = []
     for line in lines:
         m = _DIV_RE.match(line)
         if m:
-            inner = m.group(2)
+            marker_indent, inner = len(m.group(1)), m.group(3)
             if in_code:
                 out.append("```" + pending_lang)
                 out.extend(code)
@@ -111,10 +137,12 @@ def _rebuild_blocks(lines: list[str]) -> list[str]:
             if inner == "highlight":
                 in_code = True
                 code = []
+                code_indent = marker_indent + 4
                 continue
             continue  # any other div fence is chrome
         if in_code:
-            code.append(line[4:] if line.startswith("    ") else line)
+            pad = " " * code_indent
+            code.append(line[code_indent:] if line.startswith(pad) else line.lstrip(" "))
         else:
             out.append(line)
     if in_code and code:
@@ -177,7 +205,7 @@ def _clean_prose(text: str, page_url: str | None = None) -> str:
             prose = _SPAN_RE.sub(r"\1", prose)
         if page_url:
             prose = _REL_LINK_RE.sub(lambda m: _absolutize(m, page_url), prose)
-        return prose
+        return _unescape_prose(prose)
 
     cleaned = _map_prose(text, transform)
     cleaned = re.sub(r"\n{3,}", "\n\n", cleaned)
