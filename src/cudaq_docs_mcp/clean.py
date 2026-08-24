@@ -50,6 +50,10 @@ _ATTR_RE = re.compile(r"\{(?:[.#][^{}]*|[\w-]+=\"[^{}]*)\}", re.S)
 _SPAN_RE = re.compile(r"(?<!\\)\[([^\[\]\n]*)\](?!\()")
 # Relative links become absolute against the canonical page URL.
 _REL_LINK_RE = re.compile(r"(\]\()(?!https?://|#|mailto:)([^)\s]+)")
+# A doc target has a letter file extension, at end or before a #fragment
+# (run_kernel.html#sample, basics.md); a lambda default like x=1.5 (digit
+# after the dot) does not.
+_DOC_EXT_RE = re.compile(r"\.[A-Za-z]+(?:[#?]|$)")
 # Pandoc escapes markdown punctuation in prose; C++ signatures live in
 # prose, so std::vector\\<double\\> is stored escaped. Reversed last, after
 # the passes above rely on the escapes still being present.
@@ -196,14 +200,15 @@ def _map_prose(text: str, transform) -> str:
 def _absolutize(m: re.Match, page_url: str) -> str:
     """Absolutize a relative doc link; leave code that merely looks like one.
 
-    A relative doc link always contains a path separator or an extension
-    (``../index.html``, ``basics/basics.html``). A C++ lambda's parameter
-    list, ``[](float theta)`` or ``[&](int x)``, never does. Code outside
-    fenced blocks (Doxygen examples in definition lists, for instance)
-    reaches this path, so the target's shape is the final guard.
+    A relative doc link always has a path separator or a letter file
+    extension (``../index.html``, ``basics/basics.html``). A C++ lambda's
+    parameter list, ``[](float theta)`` or ``[](x=1.5)``, has neither: a
+    numeric literal like ``1.5`` is not a doc suffix. Code outside fenced
+    blocks (Doxygen examples in definition lists) reaches this path, so the
+    target's shape is the final guard (#7).
     """
     target = m.group(2)
-    if "/" not in target and "." not in target:
+    if "/" not in target and not _DOC_EXT_RE.search(target):
         return m.group(0)
     return m.group(1) + urljoin(page_url, target)
 
