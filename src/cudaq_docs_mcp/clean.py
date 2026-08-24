@@ -45,7 +45,9 @@ _LANG_MAP = {
 # Values are always quoted, which keeps C++ like ``{}`` or ``{i=0;}`` intact.
 _ATTR_RE = re.compile(r"\{(?:[.#][^{}]*|[\w-]+=\"[^{}]*)\}", re.S)
 # [text] not followed by ( is a pandoc span left over after attr removal.
-_SPAN_RE = re.compile(r"\[([^\[\]\n]*)\](?!\()")
+# The opening bracket must be unescaped: a backslash-escaped \[ is a literal
+# bracket (e.g. **\[1\]** numbered clauses), not a span to strip (#5).
+_SPAN_RE = re.compile(r"(?<!\\)\[([^\[\]\n]*)\](?!\()")
 # Relative links become absolute against the canonical page URL.
 _REL_LINK_RE = re.compile(r"(\]\()(?!https?://|#|mailto:)([^)\s]+)")
 # Pandoc escapes markdown punctuation in prose; C++ signatures live in
@@ -57,12 +59,22 @@ _UNESCAPE_RE = re.compile(r"\\([\\`*_{}\[\]()>#+.!|~<-])")
 _MATH_SPAN_RE = re.compile(r"\\\((?:.|\n)*?\\\)|\\\[(?:.|\n)*?\\\]")
 
 
+# A \(..\) / \[..\] span is real math only if it carries a LaTeX signal: a
+# backslash-command, a sub/superscript, or a norm bar. Bare bracket content
+# like \[1\] (a numbered clause) or \[float\] is a literal, not math (#5).
+_MATH_SIGNAL_RE = re.compile(r"\\[a-zA-Z]|[\^_]|\\\|")
+
+
 def _unescape_prose(prose: str) -> str:
     out: list[str] = []
     last = 0
     for m in _MATH_SPAN_RE.finditer(prose):
         out.append(_UNESCAPE_RE.sub(r"\1", prose[last : m.start()]))
-        out.append(m.group(0))  # LaTeX span kept verbatim
+        span = m.group(0)
+        # \(..\) is inline math, always kept. \[..\] is math only with a
+        # LaTeX signal; otherwise it is a literal label like \[1\] (#5).
+        keep = span.startswith("\\(") or bool(_MATH_SIGNAL_RE.search(span))
+        out.append(span if keep else _UNESCAPE_RE.sub(r"\1", span))
         last = m.end()
     out.append(_UNESCAPE_RE.sub(r"\1", prose[last:]))
     return "".join(out)
