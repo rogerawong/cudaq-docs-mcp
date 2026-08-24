@@ -232,3 +232,27 @@ def test_escaped_brackets_not_mangled_as_spans():
     # genuine leftover pandoc spans are still stripped
     assert "QuakeValue" in doc.text
     assert "[QuakeValue]" not in doc.text
+
+
+LAMBDA_DEFAULT_SAMPLE = """\
+::: {itemprop="articleBody"}
+# API[¶](#api "Permalink"){.headerlink}
+
+See [the basics](basics/basics.html){.reference .internal} and the
+image ![](../_images/bell.png){.align-center}.
+
+cudaq::run
+:   Runs a kernel.
+
+        auto k = [](x=1.5) __qpu__ {};
+"""
+
+
+def test_code_shaped_link_target_not_absolutized():
+    """Latent #7: a lambda default [](x=1.5) is code, not a relative link."""
+    doc = clean_page(LAMBDA_DEFAULT_SAMPLE, page_url=URL)
+    assert "[](x=1.5)" in doc.text
+    assert "x=1.5)" not in doc.text.replace("[](x=1.5)", "")  # no absolutized variant
+    # genuine relative doc links and images still absolutize
+    assert "(https://nvidia.github.io/cuda-quantum/latest/using/basics/basics.html)" in doc.text
+    assert "![](https://nvidia.github.io/cuda-quantum/latest/_images/bell.png)" in doc.text
