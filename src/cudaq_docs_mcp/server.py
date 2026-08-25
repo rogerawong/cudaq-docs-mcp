@@ -6,6 +6,7 @@ import json
 import os
 import re
 import sqlite3
+from typing import Literal
 
 from mcp.server.mcpserver import MCPServer
 
@@ -140,6 +141,9 @@ def get_page(path: str, version: str | None = None) -> dict:
 def find_api(name: str, language: str | None = None, version: str | None = None) -> dict:
     """Resolve a CUDA-Q API symbol to its canonical definition and doc URL.
 
+    For the legal values of a target or its options (for example what
+    set_target accepts), use list_targets instead.
+
     Args:
         name: Symbol name, full or partial: "sample", "cudaq.observe",
             "qvector", "set_target".
@@ -222,7 +226,9 @@ def search_examples(
 
 
 @mcp.tool()
-def list_targets(category: str | None = None) -> dict:
+def list_targets(
+    category: Literal["simulator", "hardware", "cloud"] | None = None,
+) -> dict:
     """List CUDA-Q execution targets (backends) with guidance on choosing.
 
     Covers simulators (CPU, GPU state vector, tensor network, noisy,
@@ -233,10 +239,15 @@ def list_targets(category: str | None = None) -> dict:
     Args:
         category: Optional filter: "simulator", "hardware", or "cloud".
     """
+    if category is not None and category not in ("simulator", "hardware", "cloud"):
+        return {
+            "error": f"invalid category {category!r}; "
+            'valid values: "simulator", "hardware", "cloud", or omit for all'
+        }
     data = load_targets()
     targets = data["targets"]
     if category:
-        targets = [t for t in targets if t["category"] == category.lower()]
+        targets = [t for t in targets if t["category"] == category]
     return {
         "how_to_choose": data["how_to_choose"],
         "docs_reviewed": data["docs_reviewed"],
