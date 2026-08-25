@@ -78,13 +78,51 @@ def _payload(version: str, note: str | None, **fields) -> dict:
     return out
 
 
+# Result-embedded signposts: descriptions steer an agent's first call, but
+# results steer every call after, so redirects ride inside responses. At most
+# one hint per response. Rows key on the returned pages' paths, never on the
+# query; a row is added only when the routing eval demonstrates a misroute it
+# fixes, and is deleted when its eval case stops failing without it. Rows use
+# a page allowlist, not a prefix: the target-comparison question and the
+# target-debugging question both return pages under using/backends/sims/, so
+# no prefix separates them. Entries: the three selection overview pages (the
+# row's namesake content, never returned for the debugging question) plus the
+# two pages the comparison eval question actually returns. Per-backend detail
+# pages (tnsims, noisy, photonics) stay off the list so debugging questions
+# are not nudged away from the docs.
+_SIGNPOSTS: tuple[tuple[frozenset[str], str], ...] = (
+    (
+        frozenset(
+            {
+                "using/backends/backends",
+                "using/backends/simulators",
+                "using/backends/hardware",
+                "using/backends/sims/svsims",
+                "using/backends/sims/mqpusims",
+            }
+        ),
+        "For a side-by-side comparison of targets and their options, "
+        "call list_targets.",
+    ),
+)
+
+
+def _see_also(paths: list[str]) -> str | None:
+    for pages, hint in _SIGNPOSTS:
+        if any(p in pages for p in paths):
+            return hint
+    return None
+
+
 @mcp.tool()
 def search_docs(query: str, version: str | None = None, limit: int = 5) -> dict:
     """Search the NVIDIA CUDA-Q documentation and return ranked excerpts.
 
     Use this before answering any CUDA-Q question from memory: the platform
     moves quickly and memorized APIs are often stale. Each result carries a
-    breadcrumb, an excerpt, and the canonical doc URL to cite.
+    breadcrumb, an excerpt, and the canonical doc URL to cite. A response may
+    include see_also, a one-sentence pointer to a sibling tool that fits the
+    question better.
 
     Args:
         query: Natural language or keywords, for example "run kernel on GPU
@@ -98,6 +136,9 @@ def search_docs(query: str, version: str | None = None, limit: int = 5) -> dict:
         results = dbmod.search_chunks(conn, query, limit=max(1, min(limit, 20)))
     finally:
         conn.close()
+    hint = _see_also([r["page"] for r in results])
+    if hint:
+        return _payload(ver, note, results=results, see_also=hint)
     return _payload(ver, note, results=results)
 
 
